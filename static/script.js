@@ -43,11 +43,11 @@
               </div>
               <div class="flex gap-2">
                   <button onclick="showDescription('${disease}', '${description.replace(/'/g, "\\'")}')" 
-                          class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
+                          class="bg-[#424769] text-[#F6B17A] px-4 py-2 rounded-lg hover:bg-[#3a3d53] transition-colors">
                       <i class="fas fa-info-circle mr-2"></i>Description
                   </button>
                   <button onclick="showPrecautions('${disease}')"
-                          class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors">
+                          class="bg-[#F6B17A] text-[#2D3250] px-4 py-2 rounded-lg hover:bg-[#bf8f67] transition-colors">
                       <i class="fas fa-shield-alt mr-2"></i>Precautions
                   </button>
               </div>
@@ -65,7 +65,7 @@
               </div>
               ${missingSymptoms.length > 0 ? `
                   <div>
-                      <h4 class="font-semibold text-yellow-600 mb-2">Additional Symptoms to Check:</h4>
+                      <h4 class="font-semibold text-[#F6B17A] mb-2">Additional Symptoms to Check:</h4>
                       <div class="flex flex-wrap gap-2">
                           ${missingSymptoms.map(symptom => `
                               <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm">
@@ -105,7 +105,7 @@
           const displaySymptom = symptom.replace(/_/g, ' ');
           div.innerHTML = `
               <label class="flex items-center cursor-pointer">
-                  <input type="checkbox" class="mr-2" value="${symptom}">
+                  <input type="checkbox" class="mr-2 accent-[#2D3250]" value="${symptom}">
                   <div class="font-medium">${displaySymptom}</div>
               </label>
           `;
@@ -263,7 +263,7 @@
       messageDiv.className = 'message bot-message';
       messageDiv.innerHTML = `
           <div class="p-4 rounded-lg">
-              <h4 class="font-semibold text-blue-600 mb-2">${disease}</h4>
+              <h4 class="font-semibold text-[#F6B17A] mb-2">${disease}</h4>
               <p class="text-gray-700">${description}</p>
           </div>
       `;

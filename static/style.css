@@ -9,13 +9,13 @@ html {
     --text-primary: #ffffff;
     --text-secondary: #a0aec0;
     --border-color: #4a5568;
-    --accent-color: #2196f3;
-    --accent-hover: #1976d2;
+    --accent-color: #2D3250;
+    --accent-hover: #2D3250;
     --card-bg: #2d2d2d;
-    --message-user-bg: #1e3a8a;
-    --message-bot-bg: #2d3748;
-    --symptom-tag-bg: #1e3a8a;
-    --symptom-tag-hover: #1e40af;
+    --message-user-bg: #424769;
+    --message-bot-bg: #393a3e;
+    --symptom-tag-bg: #2D3250;
+    --symptom-tag-hover: #424769;
 }
 
 body {
@@ -147,6 +147,10 @@ body {
     color: var(--text-primary) !important;
 }
 
+.bg-gray-100 {
+    background-color: var(--bg-primary) !important;
+}
+
 .bg-gray-50 {
     background-color: var(--bg-primary) !important;
 }
@@ -172,19 +176,19 @@ body {
 }
 
 .bg-yellow-100 {
-    background-color: #422006 !important;
+    background-color: #ffdbbde0 !important;
 }
 
 .text-yellow-800 {
-    color: #fbbf24 !important;
+    color: #2D3250 !important;
 }
 
 .bg-blue-50 {
     background-color: var(--card-bg) !important;
 }
 
-.text-blue-600 {
-    color: var(--accent-color) !important;
+.text-blue-500 {
+    color: #7077A1 !important;
 }
 
 .bg-amber-50 {
