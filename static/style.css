@@ -1,0 +1,241 @@
+html {
+    scrollbar-width: thin;
+    scrollbar-color: #888 #2d2d2d;
+}
+
+:root {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --text-primary: #ffffff;
+    --text-secondary: #a0aec0;
+    --border-color: #4a5568;
+    --accent-color: #2196f3;
+    --accent-hover: #1976d2;
+    --card-bg: #2d2d2d;
+    --message-user-bg: #1e3a8a;
+    --message-bot-bg: #2d3748;
+    --symptom-tag-bg: #1e3a8a;
+    --symptom-tag-hover: #1e40af;
+}
+
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.chat-container {
+    height: calc(100vh - 230px);
+}
+
+.message {
+    max-width: 80%;
+    margin: 8px;
+    padding: 12px;
+    border-radius: 12px;
+    animation: fadeIn 0.3s ease-in;
+}
+
+.user-message {
+    background-color: var(--message-user-bg);
+    margin-left: auto;
+}
+
+.bot-message {
+    background-color: var(--message-bot-bg);
+    margin-right: auto;
+}
+
+.symptom-checkbox {
+    margin: 4px;
+    padding: 8px;
+    border-radius: 8px;
+    background-color: var(--bg-secondary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#symptomSearch{
+    background-color: var(--bg-primary);
+}
+
+.symptom-checkbox:hover {
+    background-color: var(--border-color);
+}
+
+.symptom-checkbox.selected {
+    background-color: var(--symptom-tag-bg);
+    border-left: 4px solid var(--accent-color);
+}
+
+.selected-symptom-tag {
+    display: inline-flex;
+    align-items: center;
+    background-color: var(--symptom-tag-bg);
+    color: var(--text-primary);
+    padding: 6px 12px;
+    border-radius: 20px;
+    margin: 4px;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.selected-symptom-tag:hover {
+    background-color: var(--symptom-tag-hover);
+}
+
+.remove-symptom {
+    margin-left: 6px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.remove-symptom:hover {
+    opacity: 1;
+}
+
+.symptom-input-container {
+    min-height: 44px;
+    border: 1px solid var(--border-color);
+    border-radius: 5rem;
+    padding: 4px;
+    background-color: var(--bg-secondary);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.symptom-input-container:focus-within {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+}
+
+.placeholder-text {
+    color: #aaa;
+    pointer-events: none;
+    position: absolute;
+}
+
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 12px;
+    background-color: var(--message-bot-bg);
+    border-radius: 12px;
+    width: fit-content;
+    margin: 8px;
+}
+
+.typing-dot {
+    width: 8px;
+    height: 8px;
+    background-color: var(--text-secondary);
+    border-radius: 50%;
+    animation: typingDot 1.4s infinite ease-in-out;
+}
+
+.bg-white {
+    background-color: var(--bg-secondary) !important;
+}
+
+.text-gray-600 {
+    color: var(--text-secondary) !important;
+}
+
+.text-gray-700 {
+    color: var(--text-primary) !important;
+}
+
+.bg-gray-50 {
+    background-color: var(--bg-primary) !important;
+}
+
+.border-t {
+    border-color: var(--border-color) !important;
+}
+
+.shadow-lg {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3) !important;
+}
+
+.disease-card {
+    background-color: var(--card-bg) !important;
+}
+
+.bg-green-100 {
+    background-color: #1a472a !important;
+}
+
+.text-green-800 {
+    color: #4ade80 !important;
+}
+
+.bg-yellow-100 {
+    background-color: #422006 !important;
+}
+
+.text-yellow-800 {
+    color: #fbbf24 !important;
+}
+
+.bg-blue-50 {
+    background-color: var(--card-bg) !important;
+}
+
+.text-blue-600 {
+    color: var(--accent-color) !important;
+}
+
+.bg-amber-50 {
+    background-color: #42200665 !important;
+}
+
+.border-amber-400 {
+    border-color: #fbbf24 !important;
+}
+
+.text-amber-800 {
+    color: #fbbf24 !important;
+}
+
+@keyframes typingDot {
+
+    0%,
+    60%,
+    100% {
+        transform: translateY(0);
+    }
+
+    30% {
+        transform: translateY(-4px);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.disease-card {
+    animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}

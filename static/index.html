@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Symptom Diagnosis Chatbot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="static/style.css">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style></style>
+</head>
+
+<body class="bg-gray-50 h-screen">
+    <!-- Navbar -->
+    <nav class="bg-white shadow-lg">
+        <div class=" mx-auto px-4">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <i class="fas fa-user-md text-blue-500 text-4xl mr-2"></i>
+                    <div class="flex">
+                        <h1 class="text-xl font-bold">DOCTR.AI</h1>
+                        <p class="text-sm ml-2 text-gray-600">AI-powered health assistant</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button class="text-gray-600 hover:text-blue-500">
+                        <i class="fas fa-question-circle text-xl"></i>
+                    </button>
+                    <button id="themeToggle" class="text-gray-600 hover:text-blue-500">
+                        <i class="fas fa-sun text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="bg-amber-50 border-l-4 border-amber-400 p-4 mx-6 mt-3 rounded-r-lg">
+        <div class="flex">
+            <div class="text-sm text-amber-800">
+                <i class="fas fa-warning mr-2"></i>
+                <strong>Medical Disclaimer:</strong> This tool is for informational purposes only and does not provide
+                medical advice.
+                Always consult a healthcare professional for medical concerns.
+            </div>
+        </div>
+    </div>
+
+    <div class="mx-auto text-sm px-4 py-3">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <!-- Sidebar with symptoms -->
+            <div class="md:col-span-1 bg-white rounded-lg shadow-lg p-4">
+                <div class="flex items-center mb-4">
+                    <i class="fas fa-search text-gray-400 mr-2"></i>
+                    <input type="text" id="symptomSearch"
+                        class="w-full p-2 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-blue-500"
+                        placeholder="Search symptoms...">
+                </div>
+                <div id="symptomList" class="overflow-y-auto" style="height: calc(100vh - 250px);">
+                    <!-- Symptoms will be populated here -->
+                </div>
+            </div>
+
+            <!-- Chat interface -->
+            <div class="md:col-span-3 bg-white rounded-lg shadow-lg">
+                <div id="chatMessages" class="chat-container overflow-y-auto p-4">
+                    <!-- Messages will be added here -->
+                </div>
+
+                <div class="border-t p-3">
+                    <div class="flex gap-2">
+                        <div id="symptomInputContainer" class="symptom-input-container flex-1">
+                            <!-- Selected symptoms will be added here as tags -->
+                            <span class="placeholder-text ml-2">Select symptoms from sidebar</span>
+                        </div>
+                        <button id="sendButton"
+                            class="cursor-pointer relative w-12 h-12 rounded-full bg-black hover:bg-gray-600 pointer flex items-center justify-center ">
+                            <svg class="w-3 fill-white" viewBox="0 0 384 512">
+                                <path
+                                    d="M214.6 41.4c-12.5-12.5-32.8-12.5-45.3 0l-160 160c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L160 141.2V448c0 17.7 14.3 32 32 32s32-14.3 32-32V141.2L329.4 246.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-160-160z">
+                                </path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="static/script.js"></script>
+</body>
+
+</html>
