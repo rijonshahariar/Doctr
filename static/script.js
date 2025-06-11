@@ -58,7 +58,7 @@
                   <div class="flex flex-wrap gap-2">
                       ${matchingSymptoms.map(symptom => `
                           <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
-                              ${symptom}
+                              ${symptom.replace(/_/g, ' ')}
                           </span>
                       `).join('')}
                   </div>
@@ -69,7 +69,7 @@
                       <div class="flex flex-wrap gap-2">
                           ${missingSymptoms.map(symptom => `
                               <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm">
-                                  ${symptom}
+                                  ${symptom.replace(/_/g, ' ')}
                               </span>
                           `).join('')}
                       </div>
@@ -165,7 +165,7 @@
       }
 
       // Show selected symptoms
-      addUserMessage(`Symptoms: ${Array.from(selectedSymptoms).join(', ')}`);
+      addUserMessage(`I am having ${Array.from(selectedSymptoms).map(s => s.replace(/_/g, ' ')).join(', ')}`);
 
       // Show typing indicator
       const typingIndicator = document.createElement('div');
