@@ -11,7 +11,7 @@ html {
     --border-color: #4a5568;
     --accent-color: #2D3250;
     --accent-hover: #2D3250;
-    --card-bg: #2d2d2d;
+    --card-bg: #393a3e;
     --message-user-bg: #424769;
     --message-bot-bg: #393a3e;
     --symptom-tag-bg: #2D3250;
@@ -38,6 +38,7 @@ body {
 .user-message {
     background-color: var(--message-user-bg);
     margin-left: auto;
+    width:50%;
 }
 
 .bot-message {

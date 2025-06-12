@@ -34,9 +34,9 @@
 
   function addDiseaseCard(disease, probability, matchingSymptoms, missingSymptoms, description) {
       const cardDiv = document.createElement('div');
-      cardDiv.className = 'disease-card bg-white rounded-lg shadow-lg p-4 mb-4';
+      cardDiv.className = 'disease-card message bot-message';
       cardDiv.innerHTML = `
-          <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center justify-between">
               <div>
                   <h3 class="text-xl font-semibold">${disease}</h3>
                   <p class="text-gray-600">Match Confidence: ${(probability * 100).toFixed(1)}%</p>
@@ -44,7 +44,7 @@
               <div class="flex gap-2">
                   <button onclick="showDescription('${disease}', '${description.replace(/'/g, "\\'")}')" 
                           class="bg-[#424769] text-[#F6B17A] px-4 py-2 rounded-lg hover:bg-[#3a3d53] transition-colors">
-                      <i class="fas fa-info-circle mr-2"></i>Description
+                      <i class="fas fa-info-circle mr-2"></i>Details
                   </button>
                   <button onclick="showPrecautions('${disease}')"
                           class="bg-[#F6B17A] text-[#2D3250] px-4 py-2 rounded-lg hover:bg-[#bf8f67] transition-colors">
@@ -52,6 +52,7 @@
                   </button>
               </div>
           </div>
+          
           <div class="mt-4">
               <div class="mb-4">
                   <h4 class="font-semibold text-green-600 mb-2">Matching Symptoms:</h4>
@@ -75,7 +76,7 @@
                       </div>
                   </div>
               ` : ''}
-          </div>
+          </div> 
       `;
       document.getElementById('chatMessages').appendChild(cardDiv);
       cardDiv.scrollIntoView({ behavior: 'smooth' });
@@ -254,7 +255,7 @@
       typingIndicator.scrollIntoView({ behavior: 'smooth' });
 
       // Add a 2 second delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 3000));
 
       // Remove typing indicator
       typingIndicator.remove();
