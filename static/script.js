@@ -1,310 +1,419 @@
-  // Global variables
-  let symptoms = {};
-  let selectedSymptoms = new Set();
-  let isTyping = false;
+let symptoms = {};
+let selectedSymptoms = new Set();
+let isTyping = false;
 
-  // Initialize the chat
-  function initChat() {
-      addBotMessage("Hi! I'm your AI health assistant. Select symptoms from the list to get a diagnosis.");
-  }
+// Response styles for varied conversational tones
+const responseStyles = [
+    {
+        type: "neutral",
+        template: (disease, probability, description) =>
+            `Based on the symptoms you’ve shared, the most likely condition is <strong>${disease}</strong> (${(probability * 100).toFixed(1)}% confidence). <br> ${description}<br>Please note, this is not a medical diagnosis — I recommend speaking with a qualified healthcare provider for confirmation.`
+    },
+    {
+        type: "conversational",
+        template: (disease, probability, description) =>
+            `Hmm, from what you’ve told me, it might be related to <strong>${disease}</strong> (${(probability * 100).toFixed(1)}% confidence). <br> ${description}<br>I’m not a doctor, but I can help you learn more about this condition if you’d like!`
+    },
+    {
+        type: "action",
+        template: (disease, probability, description) =>
+            `My analysis shows the symptoms could match:<br><strong>${disease}</strong> (${(probability * 100).toFixed(1)}% confidence)<br><br> ${description}<br>I suggest monitoring your symptoms and consulting a healthcare professional as soon as possible for an accurate diagnosis.`
+    },
+    {
+        type: "probabilities",
+        template: (disease, probability, description) =>
+            `Possible match based on your symptoms:<br><strong>${disease}</strong> (${(probability * 100).toFixed(1)}% confidence)<br><br> ${description}<br>This is an estimate only; a medical examination is needed for certainty.`
+    },
+    {
+        type: "followup",
+        template: (disease, probability, description, missingSymptoms) =>
+            `Your symptoms could be linked to <strong>${disease}</strong> (${(probability * 100).toFixed(1)}% confidence). <br> ${description}<br>Do you also experience any of these: ${missingSymptoms.slice(0, 3).map(s => s.replace(/_/g, ' ')).join(', ')}? This will help me refine the prediction.`
+    },
+    {
+        type: "safety",
+        template: (disease, probability, description) =>
+            `I’ve found a possible match for your symptoms: <strong>${disease}</strong> (${(probability * 100).toFixed(1)}% confidence). <br> ${description}<br>This information is for educational purposes only — please seek medical advice before starting or changing any treatment.`
+    }
+];
 
-  // Add a message to the chat
-  function addMessage(text, isUser = false, isTyping = false) {
-      const messageDiv = document.createElement('div');
-      messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+// Initialize the chat
+function initChat() {
+    addBotMessage("Hi! I'm your AI health assistant. Select symptoms from the sidebar or type them in the input box to get a diagnosis.");
+}
 
-      if (isTyping) {
-          messageDiv.innerHTML = `<span class="typing-animation">${text}</span>`;
-      } else {
-          messageDiv.textContent = text;
-      }
+// Typewriter effect for bot messages
+async function typeMessage(text, messageDiv) {
+    isTyping = true;
+    messageDiv.innerHTML = '<span class="typing-animation"></span>';
+    const typingSpan = messageDiv.querySelector('.typing-animation');
+    typingSpan.style.whiteSpace = 'pre-wrap';
+    typingSpan.style.color = '#edededff';
+    typingSpan.style.fontFamily = 'Arial, sans-serif';
 
-      document.getElementById('chatMessages').appendChild(messageDiv);
-      messageDiv.scrollIntoView({ behavior: 'smooth' });
-      return messageDiv;
-  }
+    for (let i = 0; i < text.length; i++) {
+        typingSpan.innerHTML = text.substring(0, i + 1) + '<span class="cursor">|</span>';
+        await new Promise(resolve => setTimeout(resolve, 30));
+    }
+    typingSpan.innerHTML = text;
+    isTyping = false;
+}
 
-  function addBotMessage(text, isTyping = false) {
-      return addMessage(text, false, isTyping);
-  }
+// Add a message to the chat
+function addMessage(text, isUser = false) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+    messageDiv.style.padding = '10px';
+    messageDiv.style.margin = '5px';
+    messageDiv.style.borderRadius = '8px';
+    messageDiv.style.maxWidth = '80%';
+    messageDiv.style.lineHeight = '1.5';
+    if (isUser) {
+        messageDiv.style.backgroundColor = '#F6B17A';
+        messageDiv.style.color = '#2D3250';
+        messageDiv.style.marginLeft = 'auto';
+        messageDiv.textContent = text;
+    } else {
+        messageDiv.style.backgroundColor = '#424769';
+        messageDiv.style.color = '#F6B17A';
+    }
+    document.getElementById('chatMessages').appendChild(messageDiv);
+    messageDiv.scrollIntoView({ behavior: 'smooth' });
+    return messageDiv;
+}
 
-  function addUserMessage(text) {
-      return addMessage(text, true);
-  }
+function addBotMessage(text, typewriter = true) {
+    const messageDiv = addMessage(text, false);
+    if (typewriter) {
+        typeMessage(text, messageDiv);
+    }
+    return messageDiv;
+}
 
-  function addDiseaseCard(disease, probability, matchingSymptoms, missingSymptoms, description) {
-      const cardDiv = document.createElement('div');
-      cardDiv.className = 'disease-card message bot-message';
-      cardDiv.innerHTML = `
-          <div class="flex items-center justify-between">
-              <div>
-                  <h3 class="text-xl font-semibold">${disease}</h3>
-                  <p class="text-gray-600">Match Confidence: ${(probability * 100).toFixed(1)}%</p>
-              </div>
-              <div class="flex gap-2">
-                  <button onclick="showDescription('${disease}', '${description.replace(/'/g, "\\'")}')" 
-                          class="bg-[#424769] text-[#F6B17A] px-4 py-2 rounded-lg hover:bg-[#3a3d53] transition-colors">
-                      <i class="fas fa-info-circle mr-2"></i>Details
-                  </button>
-                  <button onclick="showPrecautions('${disease}')"
-                          class="bg-[#F6B17A] text-[#2D3250] px-4 py-2 rounded-lg hover:bg-[#bf8f67] transition-colors">
-                      <i class="fas fa-shield-alt mr-2"></i>Precautions
-                  </button>
-              </div>
-          </div>
-          
-          <div class="mt-4">
-              <div class="mb-4">
-                  <h4 class="font-semibold text-green-600 mb-2">Matching Symptoms:</h4>
-                  <div class="flex flex-wrap gap-2">
-                      ${matchingSymptoms.map(symptom => `
-                          <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
-                              ${symptom.replace(/_/g, ' ')}
-                          </span>
-                      `).join('')}
-                  </div>
-              </div>
-              ${missingSymptoms.length > 0 ? `
-                  <div>
-                      <h4 class="font-semibold text-[#F6B17A] mb-2">Additional Symptoms to Check:</h4>
-                      <div class="flex flex-wrap gap-2">
-                          ${missingSymptoms.map(symptom => `
-                              <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm">
-                                  ${symptom.replace(/_/g, ' ')}
-                              </span>
-                          `).join('')}
-                      </div>
-                  </div>
-              ` : ''}
-          </div> 
-      `;
-      document.getElementById('chatMessages').appendChild(cardDiv);
-      cardDiv.scrollIntoView({ behavior: 'smooth' });
-  }
+function addUserMessage(text) {
+    return addMessage(text, true);
+}
 
-  // Load symptoms from the server
-  async function loadSymptoms() {
-      try {
-          const response = await fetch('/symptoms');
-          symptoms = await response.json();
-          populateSymptomList();
-      } catch (error) {
-          console.error('Error loading symptoms:', error);
-          addBotMessage('Error loading symptoms. Please refresh the page.');
-      }
-  }
+// function addDiseaseCard(disease, probability, matchingSymptoms, missingSymptoms, description) {
+//     const cardDiv = document.createElement('div');
+//     cardDiv.className = 'disease-card message bot-message';
+//     cardDiv.style.backgroundColor = '#424769';
+//     cardDiv.style.color = '#F6B17A';
+//     cardDiv.style.padding = '15px';
+//     cardDiv.style.borderRadius = '8px';
+//     cardDiv.style.margin = '5px';
+//     cardDiv.style.maxWidth = '80%';
+//     cardDiv.innerHTML = `
+//         <div class="flex items-center justify-between">
+//             <div>
+//                 <h3 class="text-xl font-semibold">${disease}</h3>
+//                 <p class="text-gray-300">Match Confidence: ${(probability * 100).toFixed(1)}%</p>
+//             </div>
+//             <div class="flex gap-2">
+//                 <button onclick="showDescription('${disease}', '${description.replace(/'/g, "\\'")}')" 
+//                         class="bg-[#F6B17A] text-[#2D3250] px-4 py-2 rounded-lg hover:bg-[#bf8f67] transition-colors">
+//                     <i class="fas fa-info-circle mr-2"></i>Details
+//                 </button>
+//                 <button onclick="showPrecautions('${disease}')"
+//                         class="bg-[#F6B17A] text-[#2D3250] px-4 py-2 rounded-lg hover:bg-[#bf8f67] transition-colors">
+//                     <i class="fas fa-shield-alt mr-2"></i>Precautions
+//                 </button>
+//             </div>
+//         </div>
+//         <div class="mt-4">
+//             <div class="mb-4">
+//                 <h4 class="font-semibold text-green-400 mb-2">Matching Symptoms:</h4>
+//                 <div class="flex flex-wrap gap-2">
+//                     ${matchingSymptoms.map(symptom => `
+//                         <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
+//                             ${symptom.replace(/_/g, ' ')}
+//                         </span>
+//                     `).join('')}
+//                 </div>
+//             </div>
+//             ${missingSymptoms.length > 0 ? `
+//                 <div>
+//                     <h4 class="font-semibold text-yellow-400 mb-2">Additional Symptoms to Check:</h4>
+//                     <div class="flex flex-wrap gap-2">
+//                         ${missingSymptoms.map(symptom => `
+//                             <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm">
+//                                 ${symptom.replace(/_/g, ' ')}
+//                             </span>
+//                         `).join('')}
+//                     </div>
+//                 </div>
+//             ` : ''}
+//         </div>
+//     `;
+//     document.getElementById('chatMessages').appendChild(cardDiv);
+//     cardDiv.scrollIntoView({ behavior: 'smooth' });
+// }
 
-  // Populate the symptom list
-  function populateSymptomList() {
-      const container = document.getElementById('symptomList');
-      container.innerHTML = '';
+// Load symptoms from the server
+async function loadSymptoms() {
+    try {
+        const response = await fetch('/symptoms');
+        symptoms = await response.json();
+        populateSymptomList();
+    } catch (error) {
+        console.error('Error loading symptoms:', error);
+        addBotMessage('Error loading symptoms. Please refresh the page.');
+    }
+}
 
-      Object.keys(symptoms).forEach(symptom => {
-          const div = document.createElement('div');
-          div.className = 'symptom-checkbox';
-          // Display symptom without underscores
-          const displaySymptom = symptom.replace(/_/g, ' ');
-          div.innerHTML = `
-              <label class="flex items-center cursor-pointer">
-                  <input type="checkbox" class="mr-2 accent-[#2D3250]" value="${symptom}">
-                  <div class="font-medium">${displaySymptom}</div>
-              </label>
-          `;
+// Populate the symptom list
+function populateSymptomList() {
+    const container = document.getElementById('symptomList');
+    container.innerHTML = '';
 
-          const checkbox = div.querySelector('input');
-          checkbox.addEventListener('change', () => {
-              if (checkbox.checked) {
-                  selectedSymptoms.add(symptom);
-                  div.classList.add('selected');
-                  updateChatInput();
-              } else {
-                  selectedSymptoms.delete(symptom);
-                  div.classList.remove('selected');
-                  updateChatInput();
-              }
-          });
+    Object.keys(symptoms).forEach(symptom => {
+        const div = document.createElement('div');
+        div.className = 'symptom-checkbox';
+        const displaySymptom = symptom.replace(/_/g, ' ');
+        div.innerHTML = `
+            <label class="flex items-center cursor-pointer">
+                <input type="checkbox" class="mr-2 accent-[#2D3250]" value="${symptom}">
+                <div class="font-medium">${displaySymptom}</div>
+            </label>
+        `;
 
-          container.appendChild(div);
-      });
-  }
+        const checkbox = div.querySelector('input');
+        checkbox.addEventListener('change', () => {
+            if (checkbox.checked) {
+                selectedSymptoms.add(symptom);
+                div.classList.add('selected');
+                updateChatInput();
+            } else {
+                selectedSymptoms.delete(symptom);
+                div.classList.remove('selected');
+                updateChatInput();
+            }
+        });
 
-  function updateChatInput() {
-      const container = document.getElementById('symptomInputContainer');
-      container.innerHTML = '';
+        container.appendChild(div);
+    });
+}
 
-      selectedSymptoms.forEach(symptom => {
-          const tag = document.createElement('div');
-          tag.className = 'selected-symptom-tag';
-          // Display symptom without underscores in the tag
-          const displaySymptom = symptom.replace(/_/g, ' ');
-          tag.innerHTML = `
-              ${displaySymptom}
-              <span class="remove-symptom" onclick="removeSymptom('${symptom}')">
-                  <i class="fas fa-times"></i>
-              </span>
-          `;
-          container.appendChild(tag);
-      });
-  }
+function updateChatInput() {
+    const container = document.getElementById('symptomInputContainer');
+    container.innerHTML = '';
 
-  // Search symptoms
-  document.getElementById('symptomSearch').addEventListener('input', (e) => {
-      const searchText = e.target.value.toLowerCase();
-      const checkboxes = document.querySelectorAll('.symptom-checkbox');
+    selectedSymptoms.forEach(symptom => {
+        const tag = document.createElement('div');
+        tag.className = 'selected-symptom-tag';
+        const displaySymptom = symptom.replace(/_/g, ' ');
+        tag.innerHTML = `
+            ${displaySymptom}
+            <span class="remove-symptom" onclick="removeSymptom('${symptom}')">
+                <i class="fas fa-times"></i>
+            </span>
+        `;
+        container.appendChild(tag);
+    });
+}
 
-      checkboxes.forEach(div => {
-          const symptom = div.querySelector('label').textContent.toLowerCase();
-          div.style.display = symptom.includes(searchText) ? 'block' : 'none';
-      });
-  });
+// Parse text input for symptoms
+function parseSymptomsFromText(text) {
+    const words = text.toLowerCase().split(/[\s,.;!?]+/).filter(word => word);
+    const validSymptoms = Object.keys(symptoms);
+    const foundSymptoms = [];
 
-  // Send symptoms for prediction
-  async function sendSymptoms() {
-      if (selectedSymptoms.size === 0) {
-          addBotMessage('Please select at least one symptom.');
-          return;
-      }
+    validSymptoms.forEach(symptom => {
+        const symptomWords = symptom.toLowerCase().replace(/_/g, ' ').split(' ');
+        const symptomPhrase = symptom.toLowerCase().replace(/_/g, ' ');
+        
+        if (text.toLowerCase().includes(symptomPhrase) || 
+            symptomWords.some(word => words.includes(word))) {
+            foundSymptoms.push(symptom);
+        }
+    });
 
-      // Show selected symptoms
-      addUserMessage(`I am having ${Array.from(selectedSymptoms).map(s => s.replace(/_/g, ' ')).join(', ')}`);
+    return [...new Set(foundSymptoms)];
+}
 
-      // Show typing indicator
-      const typingIndicator = document.createElement('div');
-      typingIndicator.className = 'typing-indicator';
-      typingIndicator.innerHTML = `
-          <div class="typing-dot"></div>
-          <div class="typing-dot"></div>
-          <div class="typing-dot"></div>
-      `;
-      document.getElementById('chatMessages').appendChild(typingIndicator);
-      typingIndicator.scrollIntoView({ behavior: 'smooth' });
+// Handle user input (text or sidebar)
+async function handleUserInput() {
+    if (isTyping) return;
 
-      try {
-          const response = await fetch('/predict', {
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                  symptoms: Array.from(selectedSymptoms)
-              })
-          });
+    const textInput = document.getElementById('chatInput')?.value.trim();
+    const parsedSymptoms = parseSymptomsFromText(textInput || '');
+    const allSymptoms = new Set([...selectedSymptoms, ...parsedSymptoms]);
 
-          const data = await response.json();
+    // Handle greetings and unknown inputs
+    const lowercaseInput = textInput?.toLowerCase() || '';
+    if (['hi', 'hello', 'thanks', 'great'].includes(lowercaseInput)) {
+        addUserMessage(textInput);
+        addBotMessage(`Hi! How can I help you today?`);
+        document.getElementById('chatInput').value = '';
+        return;
+    } else if (textInput && allSymptoms.size === 0 && !selectedSymptoms.size) {
+        addUserMessage(textInput);
+        addBotMessage(`Hi! How can I help you today?`);
+        document.getElementById('chatInput').value = '';
+        return;
+    }
 
-          // Add a 2 second delay to make it feel more natural
-          await new Promise(resolve => setTimeout(resolve, 2000));
+    if (allSymptoms.size === 0) {
+        addBotMessage('Please select or type at least one symptom.');
+        return;
+    }
 
-          // Remove typing indicator
-          typingIndicator.remove();
+    // Show user message: exact text for text input, symptom list for sidebar-only
+    if (textInput) {
+        addUserMessage(textInput);
+    } else if (selectedSymptoms.size > 0) {
+        addUserMessage(`I am having ${Array.from(selectedSymptoms).map(s => s.replace(/_/g, ' ')).join(', ')}`);
+    }
 
-          if (data.error) {
-              addBotMessage(`Error: ${data.error}`);
-              return;
-          }
+    // Show typing indicator
+    const typingIndicator = document.createElement('div');
+    typingIndicator.className = 'typing-indicator';
+    typingIndicator.innerHTML = `
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+    `;
+    document.getElementById('chatMessages').appendChild(typingIndicator);
+    typingIndicator.scrollIntoView({ behavior: 'smooth' });
 
-          // Show disease card with matching and missing symptoms
-          addDiseaseCard(
-              data.disease,
-              data.probability,
-              data.matching_symptoms,
-              data.missing_symptoms,
-              data.description
-          );
+    try {
+        const response = await fetch('/predict', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                symptoms: Array.from(allSymptoms)
+            })
+        });
 
-      } catch (error) {
-          console.error('Error:', error);
-          typingIndicator.remove();
-          addBotMessage('Sorry, there was an error processing your request. Please try again.');
-      }
-  }
+        const data = await response.json();
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        typingIndicator.remove();
 
-  // Placeholder functions for description and precautions
-  async function showPrecautions(disease) {
-      // Show typing indicator
-      const typingIndicator = document.createElement('div');
-      typingIndicator.className = 'typing-indicator';
-      typingIndicator.innerHTML = `
-          <div class="typing-dot"></div>
-          <div class="typing-dot"></div>
-          <div class="typing-dot"></div>
-      `;
-      document.getElementById('chatMessages').appendChild(typingIndicator);
-      typingIndicator.scrollIntoView({ behavior: 'smooth' });
+        if (data.error) {
+            addBotMessage(`Error: ${data.error}`);
+            return;
+        }
 
-      // Add a 2 second delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
+        // Select random response style
+        const style = responseStyles[Math.floor(Math.random() * responseStyles.length)];
+        const message = allSymptoms.size === 1 && style.type !== 'followup' ?
+            responseStyles.find(s => s.type === 'followup').template(
+                data.disease,
+                data.probability,
+                data.description,
+                data.missing_symptoms
+            ) :
+            style.template(data.disease, data.probability, data.description, data.missing_symptoms);
 
-      // Remove typing indicator
-      typingIndicator.remove();
+        // Show bot message and disease card
+        addBotMessage(message);
+        // addDiseaseCard(
+        //     data.disease,
+        //     data.probability,
+        //     data.matching_symptoms,
+        //     data.missing_symptoms,
+        //     data.description
+        // );
 
-      addBotMessage(`Precautions for ${disease}: [Precautions will be added when dataset is available]`);
-  }
+        // Clear text input and update selected symptoms
+        document.getElementById('chatInput').value = '';
+        allSymptoms.forEach(symptom => selectedSymptoms.add(symptom));
+        updateChatInput();
 
-  // Update the showDescription function to include typing indicator
-  async function showDescription(disease, description) {
-      // Show typing indicator
-      const typingIndicator = document.createElement('div');
-      typingIndicator.className = 'typing-indicator';
-      typingIndicator.innerHTML = `
-          <div class="typing-dot"></div>
-          <div class="typing-dot"></div>
-          <div class="typing-dot"></div>
-      `;
-      document.getElementById('chatMessages').appendChild(typingIndicator);
-      typingIndicator.scrollIntoView({ behavior: 'smooth' });
+    } catch (error) {
+        console.error('Error:', error);
+        typingIndicator.remove();
+        addBotMessage('Sorry, there was an error processing your request. Please try again.');
+    }
+}
 
-      // Add a 2 second delay
-      await new Promise(resolve => setTimeout(resolve, 3000));
+// Search symptoms
+document.getElementById('symptomSearch').addEventListener('input', (e) => {
+    const searchText = e.target.value.toLowerCase();
+    const checkboxes = document.querySelectorAll('.symptom-checkbox');
 
-      // Remove typing indicator
-      typingIndicator.remove();
+    checkboxes.forEach(div => {
+        const symptom = div.querySelector('label').textContent.toLowerCase();
+        div.style.display = symptom.includes(searchText) ? 'block' : 'none';
+    });
+});
 
-      const messageDiv = document.createElement('div');
-      messageDiv.className = 'message bot-message';
-      messageDiv.innerHTML = `
-          <div class="p-4 rounded-lg">
-              <h4 class="font-semibold text-[#F6B17A] mb-2">${disease}</h4>
-              <p class="text-gray-700">${description}</p>
-          </div>
-      `;
-      document.getElementById('chatMessages').appendChild(messageDiv);
-      messageDiv.scrollIntoView({ behavior: 'smooth' });
-  }
+// Remove symptom
+function removeSymptom(symptom) {
+    selectedSymptoms.delete(symptom);
+    const checkbox = document.querySelector(`input[value="${symptom}"]`);
+    if (checkbox) {
+        checkbox.checked = false;
+        checkbox.parentElement.parentElement.classList.remove('selected');
+    }
+    updateChatInput();
+}
 
-  // Event listeners
-  document.getElementById('sendButton').addEventListener('click', sendSymptoms);
+// Show description with typewriter effect
+async function showDescription(disease, description) {
+    const typingIndicator = document.createElement('div');
+    typingIndicator.className = 'typing-indicator';
+    typingIndicator.innerHTML = `
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+    `;
+    document.getElementById('chatMessages').appendChild(typingIndicator);
+    typingIndicator.scrollIntoView({ behavior: 'smooth' });
 
-  // Add function to remove symptoms
-  function removeSymptom(symptom) {
-      selectedSymptoms.delete(symptom);
-      const checkbox = document.querySelector(`input[value="${symptom}"]`);
-      if (checkbox) {
-          checkbox.checked = false;
-          checkbox.parentElement.parentElement.classList.remove('selected');
-      }
-      updateChatInput();
-  }
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    typingIndicator.remove();
 
-  // Add theme toggle functionality
-  const themeToggle = document.getElementById('themeToggle');
-  const themeIcon = themeToggle.querySelector('i');
+    const message = `Details for <strong>${disease}</strong>:<br>${description}`;
+    addBotMessage(message);
+}
 
-  function toggleTheme() {
-      document.documentElement.classList.toggle('light-mode');
-      if (document.documentElement.classList.contains('light-mode')) {
-          themeIcon.classList.remove('fa-sun');
-          themeIcon.classList.add('fa-moon');
-      } else {
-          themeIcon.classList.remove('fa-moon');
-          themeIcon.classList.add('fa-sun');
-      }
-  }
+// Show precautions (placeholder)
+async function showPrecautions(disease) {
+    const typingIndicator = document.createElement('div');
+    typingIndicator.className = 'typing-indicator';
+    typingIndicator.innerHTML = `
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+    `;
+    document.getElementById('chatMessages').appendChild(typingIndicator);
+    typingIndicator.scrollIntoView({ behavior: 'smooth' });
 
-  themeToggle.addEventListener('click', toggleTheme);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    typingIndicator.remove();
 
-  // Initialize the application
-  window.addEventListener('load', () => {
-      initChat();
-      loadSymptoms();
-  });
+    addBotMessage(`Precautions for ${disease}: [Precautions will be added when dataset is available]`);
+}
+
+// Event listeners
+document.getElementById('sendButton').addEventListener('click', handleUserInput);
+document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        handleUserInput();
+    }
+});
+
+// Theme toggle
+const themeToggle = document.getElementById('themeToggle');
+const themeIcon = themeToggle.querySelector('i');
+
+function toggleTheme() {
+    document.documentElement.classList.toggle('light-mode');
+    if (document.documentElement.classList.contains('light-mode')) {
+        themeIcon.classList.remove('fa-sun');
+        themeIcon.classList.add('fa-moon');
+    } else {
+        themeIcon.classList.remove('fa-moon');
+        themeIcon.classList.add('fa-sun');
+    }
+}
+
+themeToggle.addEventListener('click', toggleTheme);
+
+// Initialize the application
+window.addEventListener('load', () => {
+    initChat();
+    loadSymptoms();
+});
