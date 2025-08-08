@@ -318,7 +318,7 @@ async function handleUserInput() {
 
         // Clear text input and update selected symptoms
         document.getElementById('chatInput').value = '';
-        allSymptoms.forEach(symptom => selectedSymptoms.add(symptom));
+       // allSymptoms.forEach(symptom => selectedSymptoms.add(symptom));
         updateChatInput();
 
     } catch (error) {
