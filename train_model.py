@@ -1,6 +1,7 @@
 import pandas as pd
 import joblib
 from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 import logging
@@ -10,7 +11,7 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 def train_and_save_model():
-    """Train the Logistic Regression model and save it to a file."""
+    """Train both Logistic Regression and Random Forest models and save them along with their accuracies."""
     try:
         logger.debug("Loading datasets...")
         # Load the datasets
@@ -30,18 +31,30 @@ def train_and_save_model():
         # Split data for training and validation
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-        # Initialize and train the model
-        model = LogisticRegression(max_iter=1000, random_state=42)
-        model.fit(X_train, y_train)
+        # Train Logistic Regression model
+        logreg_model = LogisticRegression(max_iter=1000, random_state=42)
+        logreg_model.fit(X_train, y_train)
+        logreg_train_acc = accuracy_score(y_train, logreg_model.predict(X_train))
+        logreg_test_acc = accuracy_score(y_test, logreg_model.predict(X_test))
+        logger.debug(f"Logistic Regression - Train accuracy: {logreg_train_acc:.4f}, Test accuracy: {logreg_test_acc:.4f}")
 
-        # Log model performance
-        train_accuracy = accuracy_score(y_train, model.predict(X_train))
-        test_accuracy = accuracy_score(y_test, model.predict(X_test))
-        logger.debug(f"Model training complete. Train accuracy: {train_accuracy:.4f}, Test accuracy: {test_accuracy:.4f}")
+        # Train Random Forest model
+        rf_model = RandomForestClassifier(random_state=42)
+        rf_model.fit(X_train, y_train)
+        rf_train_acc = accuracy_score(y_train, rf_model.predict(X_train))
+        rf_test_acc = accuracy_score(y_test, rf_model.predict(X_test))
+        logger.debug(f"Random Forest - Train accuracy: {rf_train_acc:.4f}, Test accuracy: {rf_test_acc:.4f}")
 
-        # Save the model
-        joblib.dump(model, 'disease_predictor_model.joblib')
-        logger.debug("Model saved to 'disease_predictor_model.joblib'.")
+        # Save models
+        joblib.dump(logreg_model, 'logreg_model.joblib')
+        joblib.dump(rf_model, 'rf_model.joblib')
+
+        # Save accuracies
+        joblib.dump({
+            'logreg': logreg_test_acc,
+            'rf': rf_test_acc
+        }, 'model_accuracies.joblib')
+        logger.debug("Models and accuracies saved.")
 
     except Exception as e:
         logger.error(f"Error during model training: {str(e)}")

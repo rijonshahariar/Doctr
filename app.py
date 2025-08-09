@@ -20,13 +20,14 @@ app = Flask(__name__, static_folder='static')
 disease_data = None
 feature_names = None
 disease_descriptions = None
-model = None
+logreg_model = None
+rf_model = None
+model_accuracies = None
 disease_label_map = None
-model_file = 'disease_predictor_model.joblib'
 
 def initialize_globals():
-    """Initialize global variables by loading data and the pre-trained model."""
-    global feature_names, disease_data, disease_descriptions, model, disease_label_map
+    """Initialize global variables by loading data and the pre-trained models."""
+    global feature_names, disease_data, disease_descriptions, logreg_model, rf_model, model_accuracies, disease_label_map
 
     try:
         logger.debug("Loading datasets...")
@@ -82,9 +83,11 @@ def initialize_globals():
 
         logger.debug(f"Loaded {len(disease_data)} unique disease entries.")
 
-        # Load the pre-trained model
-        model = joblib.load('disease_predictor_model.joblib')
-        logger.debug("Pre-trained model loaded successfully.")
+        # Load the pre-trained models and accuracies
+        logreg_model = joblib.load('logreg_model.joblib')
+        rf_model = joblib.load('rf_model.joblib')
+        model_accuracies = joblib.load('model_accuracies.joblib')
+        logger.debug("Pre-trained models loaded successfully.")
 
         logger.debug("Initialization complete.")
         return True
@@ -94,9 +97,9 @@ def initialize_globals():
         return False
 
 def find_best_match(symptoms):
-    """Predict disease using the trained model."""
-    if not disease_data or not model or not disease_label_map:
-        raise ValueError("Disease data, model, or label map not initialized")
+    """Predict disease using both models, compare results, and select based on agreement or accuracy."""
+    if not disease_data or not logreg_model or not rf_model or not disease_label_map:
+        raise ValueError("Disease data, models, or label map not initialized")
     
     try:
         # Create a binary vector for input symptoms
@@ -107,9 +110,39 @@ def find_best_match(symptoms):
             else:
                 logger.warning(f"Symptom '{symptom}' not found in feature_names")
         
-        # Predict disease and probabilities
-        predicted_disease_idx = model.predict([input_vector])[0]
-        probabilities = model.predict_proba([input_vector])[0]
+        # Predict with both models
+        logreg_idx = logreg_model.predict([input_vector])[0]
+        logreg_prob = np.max(logreg_model.predict_proba([input_vector])[0])
+        
+        rf_idx = rf_model.predict([input_vector])[0]
+        rf_prob = np.max(rf_model.predict_proba([input_vector])[0])
+        
+        logreg_acc = model_accuracies['logreg']
+        rf_acc = model_accuracies['rf']
+        
+        if logreg_idx == rf_idx:
+            # Models agree, choose the one with higher probability
+            if logreg_prob > rf_prob:
+                chosen_algorithm = 'Logistic Regression'
+                probability = logreg_prob
+                model_accuracy = logreg_acc
+            else:
+                chosen_algorithm = 'Random Forest'
+                probability = rf_prob
+                model_accuracy = rf_acc
+            predicted_disease_idx = logreg_idx  # same as rf_idx
+        else:
+            # Models disagree, choose the one with higher accuracy
+            if logreg_acc > rf_acc:
+                chosen_algorithm = 'Logistic Regression'
+                predicted_disease_idx = logreg_idx
+                probability = logreg_prob
+                model_accuracy = logreg_acc
+            else:
+                chosen_algorithm = 'Random Forest'
+                predicted_disease_idx = rf_idx
+                probability = rf_prob
+                model_accuracy = rf_acc
         
         # Map numeric label to disease name
         if predicted_disease_idx not in disease_label_map:
@@ -131,10 +164,12 @@ def find_best_match(symptoms):
         
         return {
             'disease': predicted_disease,
-            'probability': float(probabilities[model.classes_.tolist().index(predicted_disease_idx)]),
+            'probability': float(probability),
             'matching_symptoms': matching_symptoms,
             'missing_symptoms': missing_symptoms,
-            'description': disease_info['description']
+            'description': disease_info['description'],
+            'algorithm': chosen_algorithm,
+            'model_accuracy': model_accuracy
         }
     
     except Exception as e:
@@ -148,10 +183,10 @@ def home():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    """Predict disease from symptoms using the trained model."""
+    """Predict disease from symptoms using both models."""
     try:
-        if not disease_data or not model or not disease_label_map:
-            raise ValueError("Disease data, model, or label map not initialized")
+        if not disease_data or not logreg_model or not rf_model or not disease_label_map:
+            raise ValueError("Disease data, models, or label map not initialized")
             
         data = request.get_json()
         symptoms = data.get('symptoms', [])
@@ -171,7 +206,9 @@ def predict():
             'probability': match['probability'],
             'matching_symptoms': match['matching_symptoms'],
             'missing_symptoms': match['missing_symptoms'],
-            'description': match['description']
+            'description': match['description'],
+            'algorithm': match['algorithm'],
+            'model_accuracy': match['model_accuracy']
         })
     
     except Exception as e:
